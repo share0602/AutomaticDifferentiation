@@ -39,10 +39,10 @@ class SVD(torch.autograd.Function):
         Su = (F+G)*(UdU-UdU.t())/2
         Sv = (F-G)*(VdV-VdV.t())/2
 
-        dA = U @ (Su + Sv + torch.diag(dS)) @ Vt 
+        dA = U @ (Su + Sv + torch.diag(dS)) @ Vt
         if (M>NS):
-            dA = dA + (torch.eye(M, dtype=dU.dtype, device=dU.device) - U@Ut) @ (dU/S) @ Vt 
+            dA = dA + (torch.eye(M, dtype=dU.dtype, device=dU.device) - U @ Ut) @ (dU / S) @ Vt
         if (N>NS):
-            dA = dA + (U/S) @ dV.t() @ (torch.eye(N, dtype=dU.dtype, device=dU.device) - V@Vt)
+            dA = dA + (U/S) @ dV.t() @ (torch.eye(N, dtype=dU.dtype, device=dU.device) - V @ Vt)
         return dA
 

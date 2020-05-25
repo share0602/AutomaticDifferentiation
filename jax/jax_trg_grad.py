@@ -8,7 +8,7 @@ config.update("jax_debug_nans", True)
 ##### Set bond dimensions and temperature
 chiM = 4
 #relTemp = 0.8  # temp relative to the crit temp, in [0,inf]
-log2L = 8 #7 will be nan # number of coarse-graining
+log2L = 5 #7 will be nan # number of coarse-graining
 Tc = (2 / np.log(1 + np.sqrt(2)))
 relTemp = 0.8 
 Tval = relTemp*Tc
