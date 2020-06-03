@@ -1,14 +1,13 @@
-#from numpy import linalg as LA
-from torch_ncon import ncon
-from torch_svd import SVD
+from numpy import linalg as LA
+from utils import ncon
+from utils import SVD
+
 torch_svd = SVD.apply
 import numpy as np
-from numpy import linalg as LA
 import torch
 dtype = torch.float64; device = 'cpu'
-#torch.autograd.set_detect_anomaly(True)
-#import os
-#os.environ['KMP_DUPLICATE_LIB_OK']='True'
+torch.autograd.set_detect_anomaly(True)
+
 ########################## Utility Function ####################################
 def double_ten(Ainit):
     chiD = Ainit.shape[0]
@@ -25,7 +24,7 @@ def double_imp_right(Binit, hr):
     chiD = Binit.shape[0]
     chiH = hr.shape[2]
     gOB = ncon([Binit,hr,(Binit)], [[-1,-4,-6,-8,1], [1,2,-3], [-2,-5,-7,-9,2]]);
-    gOB = torch.reshape(gOB,[chiD**2*chiH,chiD**2,chiD**2,chiD**2]);
+    gOB = torch.reshape(gOB, [chiD ** 2 * chiH, chiD ** 2, chiD ** 2, chiD ** 2]);
     return gOB
 def construct_uv(TA, chi):
     chi0 = TA.shape[0]
@@ -55,11 +54,11 @@ def construct_uv_imp_left(gOA, chiH, chi):
 def construct_uv_imp_right(gOB, chiH, chi):
     chi2 = gOB.shape[0]
     chi3 = min(chi, chi2 ** 2)
-    gOB = torch.reshape(gOB, (chi2 ** 2*chiH, chi2 ** 2 ))
+    gOB = torch.reshape(gOB, (chi2 ** 2 * chiH, chi2 ** 2))
     utemp, stemp, vtemp = torch_svd(gOB)
     vtemp = vtemp.T
     U12 = utemp[:, :chi3] @ torch.diag(torch.sqrt(abs(stemp[:chi3])))
-    U12 = torch.reshape(U12, (chi2, chi2*chiH, chi3))
+    U12 = torch.reshape(U12, (chi2, chi2 * chiH, chi3))
     V12 = torch.diag(torch.sqrt(abs(stemp[:chi3]))) @ vtemp[:chi3, :]
     V12 = torch.reshape(V12, (chi3, chi2, chi2))
     V12 = V12.permute([1, 2, 0])
@@ -86,9 +85,9 @@ def trg_loss(Ainit, Binit, chi, log2L, hl, hr):
     checkConv_expect = []
     # %%%%% do TRG iteration
     for iter in range(RGstep):
-         # print('RGstep = ',iter+1, ', TA.shape = ', TA.shape)
-         Tnorm = torch.sqrt(torch.norm(TA)*torch.norm(TB));
-         Nsq = Nsq*torch.exp(torch.log(Tnorm)/(2**(iter)));
+         print('RGstep = ',iter+1, )
+         Tnorm = torch.sqrt(torch.norm(TA) * torch.norm(TB));
+         Nsq = Nsq * torch.exp(torch.log(Tnorm) / (2 ** (iter)));
          TA = TA/Tnorm; TB = TB/Tnorm;
          U1, V1 = construct_uv(TA, chi)
          TB = TB.permute(3,0,1,2)
@@ -123,7 +122,7 @@ def trg_loss(Ainit, Binit, chi, log2L, hl, hr):
     #  contract the remaining 4 tensor
     TATA = ncon([TA,TA],[[1,-1,2,-3],[2,-2,1,-4]]);
     Rest = ncon([TATA,TATA],[[1,2,3,4],[3,4,1,2]]);
-    Nsq = Nsq*torch.exp(torch.log(Rest)/2**(2*log2L));
+    Nsq = Nsq * torch.exp(torch.log(Rest) / 2 ** (2 * log2L));
     T11T12 = ncon([gOA,gOB],[[1,-1,2,-3], [2,-2,1,-4]]);
     T21T22 = ncon([gB,gA],[[1,-1,2,-3], [2,-2,1,-4]]);
     ThamRest = ncon([T11T12,T21T22],[[1,2,3,4],[3,4,1,2]]);
@@ -180,6 +179,7 @@ if __name__ == '__main__':
     ExpectEner.backward()
     print('Ainit.grad.shape = ', Ainit.grad.shape)
     print('Ainit.grad[0,0,0,0,:] = ', Ainit.grad[0,0,0,0,:])
+    print('Ainit = ', Ainit)
     ExpectEner = ExpectEner.item()
     Error = abs((ExpectEner - EnExact)/EnExact);
     # print('NormPerSite = ',Nsq);

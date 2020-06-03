@@ -39,7 +39,7 @@ class iPEPS(torch.nn.Module):
 
 if __name__ == '__main__':
     # %%%%% Set bond dimension and lattie sites
-    log2L = 3;  # 2^10 x 2^10 site
+    log2L = 5;  # 2^10 x 2^10 site
     chi = 16;  # bond dimension
     # RGstep = 2*log2L-2; # remain 4 tensors
     whichExample = 1
@@ -85,6 +85,7 @@ if __name__ == '__main__':
         optimizer.zero_grad()
         loss = model.forward()
         loss.backward()
+        print(model.A.grad)
         # print(loss.item(), model.A.grad[0,0,0,0,:])
         return loss
 

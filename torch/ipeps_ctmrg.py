@@ -22,25 +22,27 @@ class iPEPS(torch.nn.Module):
         Ainit = Init[0]; Binit = Init[1]
         Ainit = torch.from_numpy(Ainit); Ainit.requires_grad_()
         Binit = torch.from_numpy(Binit); Binit.requires_grad_()
-        #Ainit = torch.rand(2, 2, 2, 2, 2, dtype=torch.float64, device='cpu')
-        #Binit = torch.rand(2, 2, 2, 2, 2, dtype=torch.float64, device='cpu')
+        # Ainit = torch.rand(2, 2, 2, 2, 2, dtype=torch.float64, device='cpu')
+        # Binit = torch.rand(2, 2, 2, 2, 2, dtype=torch.float64, device='cpu')
         self.A = torch.nn.Parameter(Ainit)
         self.B = torch.nn.Parameter(Binit)
 
     def forward(self):
         chi,hloc, ctm_step = self.chi, self.hloc, self.ctm_step
-        A, B = self.A, self.B
+        # A, B = self.A, self.B
+        A = self.A
         # print(A.norm())
-        A = A/A.norm(); B = B/B.norm()
+        A = A/A.norm();
+        #B = B/A.norm()
         # print(A.norm())
-        loss = ctmrg(A,B,hloc,chi,ctm_step)
+        loss = ctmrg(A,A,hloc,chi,ctm_step)
         return loss
 
 # %%%%% Set bond dimension and lattie sites
 chi = 16;  # bond dimension
 ctm_step = 5
 # RGstep = 2*log2L-2; # remain 4 tensors
-model_name = 'Heisenberg'
+model_name = 'Ising'
 # %%%%% Initialize Hamiltonian (Heisenberg Model) %%%%%
 sX = np.array([[0, 1], [1, 0]]);
 sY = np.array([[0, -1j], [1j, 0]])
