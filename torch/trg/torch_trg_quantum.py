@@ -1,7 +1,8 @@
 from numpy import linalg as LA
+import sys
+sys.path.insert(0, '../')
 from utils import ncon
 from utils import SVD
-
 torch_svd = SVD.apply
 import numpy as np
 import torch
@@ -145,12 +146,12 @@ if __name__ == '__main__':
     Init = {};
     if whichExample == 1:
         ##### Example 1: Heisenberg model
-        Init = np.load("HeisenInit.npy") # obtain from iPEPS-TEBD
+        Init = np.load("../InitialState/HeisenInit.npy") # obtain from iPEPS-TEBD
         EnExact = -0.6694421
         hloc = 0.25 * np.real(np.kron(sX, sX) + np.kron(sY, sY) + np.kron(sZ, sZ))
     elif whichExample == 2:
         ##### Example 2: Ising model
-        Init = np.load("IsingInit.npy") # obtain from iPEPS-TEBD
+        Init = np.load("../InitialState/IsingInit.npy") # obtain from iPEPS-TEBD
         EnExact = -3.28471
         hmag = 3.1
         hloc = np.real(-np.kron(sX, sX) - hmag * 0.25 * (np.kron(sI, sZ) + np.kron(sZ, sI)))

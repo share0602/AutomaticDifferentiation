@@ -1,5 +1,7 @@
 import numpy as np
 from numpy import linalg as LA
+import sys
+sys.path.insert(0, '../')
 import torch
 dtype = torch.float64; device = 'cpu'
 torch.autograd.set_detect_anomaly(True)
@@ -17,9 +19,9 @@ class iPEPS(torch.nn.Module):
         self.hl = params[2]
         self.hr = params[3]
         if whichExample == 1:
-            Init = np.load("HeisenInit.npy")
+            Init = np.load("../InitialState/HeisenInit.npy")
         elif whichExample == 2:
-            Init = np.load("IsingInit.npy")
+            Init = np.load("../InitialState/IsingInit.npy")
         Ainit = Init[0]; Binit = Init[1]
         Ainit = torch.from_numpy(Ainit); Ainit.requires_grad_()
         Binit = torch.from_numpy(Binit); Binit.requires_grad_()
@@ -51,12 +53,12 @@ if __name__ == '__main__':
     Init = {};
     if whichExample == 1:
         ##### Example 1: Heisenberg model
-        Init = np.load("HeisenInit.npy")  # obtain from iPEPS-TEBD
+        Init = np.load("../InitialState/HeisenInit.npy")  # obtain from iPEPS-TEBD
         EnExact = -0.6694421
         hloc = 0.25 * np.real(np.kron(sX, sX) + np.kron(sY, sY) + np.kron(sZ, sZ))
     elif whichExample == 2:
         ##### Example 2: Ising model
-        Init = np.load("IsingInit.npy")  # obtain from iPEPS-TEBD
+        Init = np.load("../InitialState/IsingInit.npy")  # obtain from iPEPS-TEBD
         EnExact = -3.28471
         hmag = 3.1
         hloc = np.real(-np.kron(sX, sX) - hmag * 0.25 * (np.kron(sI, sZ) + np.kron(sZ, sI)))
@@ -85,7 +87,7 @@ if __name__ == '__main__':
         optimizer.zero_grad()
         loss = model.forward()
         loss.backward()
-        print(model.A.grad)
+        # print(model.A.grad)
         # print(loss.item(), model.A.grad[0,0,0,0,:])
         return loss
 

@@ -1,5 +1,5 @@
-# import sys
-# sys.path.insert(0, '../')
+import sys
+sys.path.insert(0, '../')
 from utils import ncon
 from utils import QR
 from utils import SVD
@@ -12,13 +12,15 @@ import torch
 dtype = torch.float64; device = 'cpu'
 torch.autograd.set_detect_anomaly(True)
 
-def tuple_rotation(c1, c2, c3, c4):
+def list_rotation(cns):
     """Returns new tuple shifted to left by one place."""
-    return c2, c3, c4, c1
+    cns = [cns[1], cns[2], cns[3], cns[0]]
+    return cns
 def weight_rotate(weight):
     """Returns weight rotated anti-clockwise."""
     weight = weight.permute(1, 2, 3, 0)
     return weight
+
 def extend_tensors(c1, t1, t4, w, c4, t3):
     ## c1t1
     chi0, chi1, chi2 = (t1.shape[0], c1.shape[1], t1.shape[1])
@@ -82,7 +84,8 @@ def coarse_grain(c1t1, t4w, c4t3, u_up, u_down):
               [[1, -1], [1, -2, 2], [2, -3]])
     c4 = u_down.T.contiguous() @ c4t3
     return c1, t4, c4
-
+def normalize(x):
+    return x/x.norm()
 def free_energy_ctmrg(lattice, beta, chiM, CTMRGstep, thres = 1e-7):
     p_beta = torch.exp(beta)
     m_beta = torch.exp(-beta)
@@ -115,8 +118,8 @@ def free_energy_ctmrg(lattice, beta, chiM, CTMRGstep, thres = 1e-7):
                           [[-1, 1], [-2, 2], [-3, 3], [1, 2, 3]])
         weight_mag = ncon([a_mag, a_mag],
                       [[1,-3,-4], [1,-1,-2]])
-    c1, c2, c3, c4 = [torch.rand([2, 2], dtype=dtype, device=device)] * 4
-    t1, t2, t3, t4 = [torch.rand([2, 2, 2], dtype=dtype, device=device)] * 4
+    cns = [torch.rand([2, 2], dtype=dtype, device=device)] * 4
+    tms = [torch.rand([2, 2, 2], dtype=dtype, device=device)] * 4
     lnz_val = 0
     lnz_mem_val = -1
     steps = 0
@@ -125,7 +128,7 @@ def free_energy_ctmrg(lattice, beta, chiM, CTMRGstep, thres = 1e-7):
         # print('c1.shape = ', tuple(c1.shape), ', CTMRGstep = ', steps + 1)
         for i in range(4):  # four direction
             ######################## Extend tensors
-            c1t1, t4w, c4t3 = extend_tensors(c1, t1, t4, weight, c4, t3)
+            c1t1, t4w, c4t3 = extend_tensors(cns[0], tms[0], tms[3], weight, cns[3], tms[2])
             # print(c1t1.shape)
             ######################## Create projector
             # Orus scheme
@@ -139,19 +142,13 @@ def free_energy_ctmrg(lattice, beta, chiM, CTMRGstep, thres = 1e-7):
             #     weight = weight_rotate(weight)
             # u_up, u_down = create_projectors_corboz(*corner_extended, chiM)
             ###################### Coarse grain tensors
-            c1, t4, c4 = coarse_grain(c1t1, t4w, c4t3, u_up, u_down)
+            cns[0], tms[3], cns[3] = coarse_grain(c1t1, t4w, c4t3, u_up, u_down)
 
             ###################### Rotate tensors
-            c1, c2, c3, c4 = tuple_rotation(c1, c2, c3, c4)
-            t1, t2, t3, t4 = tuple_rotation(t1, t2, t3, t4)
+            cns, tms = map(list_rotation, (cns, tms))
             weight = weight_rotate(weight)
-        cns = [c1, c2, c3, c4];
-        tms = [t1, t2, t3, t4]
-        for j in range(4):
-            norm = cns[j].abs().max()
-            cns[j] = cns[j] / norm
-            norm = tms[j].abs().max()
-            tms[j] = tms[j] / norm
+        cns = list(map(normalize, cns))
+        tms = list(map(normalize, tms));
         c1, c2, c3, c4 = cns
         t1, t2, t3, t4 = tms
         # print(t4.shape)
@@ -180,12 +177,13 @@ def free_energy_ctmrg(lattice, beta, chiM, CTMRGstep, thres = 1e-7):
     return lnz, mag
 
 ##### Set bond dimensions and temperature
-lattice = 'honeycomb'
+lattice = 'square'
 CTMRG_step = 500
 chiM = 24
+print('lattice = ', lattice, 'chiM = ', chiM)
 #relTemp = 0.8  # temp relative to the crit temp, in [0,inf]
-'''
-K = 0.666
+
+K = 0.44
 beta = torch.tensor(K, dtype=dtype, device=device).requires_grad_()
 # beta = torch.tensor(K, dtype=dtype, device=device)
 Tval = 1/beta.item()
@@ -195,15 +193,27 @@ lnz, mag = free_energy_ctmrg(lattice, beta,chiM, CTMRG_step)
 # print(dlnz)
 
 print('mag = ', mag.item())
-FreeEnergy = -Tval*lnz
-print('FreeEnergy = ', FreeEnergy.item())
-dlnz, = torch.autograd.grad(lnz, beta, create_graph=True) #  En = -d lnZ / d beta
-dlnz2, = torch.autograd.grad(dlnz, beta)
-message = ('K={:.3f}, ' + 'lnz={:.5f}, '+'dlnz={:.5f}, '+'dlnz2={:.5f} ')\
-        .format(K, lnz.item(), -dlnz.item(), dlnz2.item()*beta.item()**2)
-print(message)
+FreeEnergy = -(Tval*lnz).item()
+print('FreeEnergy = ', FreeEnergy)
 
-'''
+##### Compare with exact results (thermodynamic limit)
+maglambda = 1 / (np.sinh(2 / Tval) ** 2)
+N = 1000000;
+x = np.linspace(0, np.pi, N + 1)
+y = np.log(np.cosh(2 * beta.item()) * np.cosh(2 * beta.item()) + (1 / maglambda) * np.sqrt(
+        1 + maglambda ** 2 - 2 * maglambda * np.cos(2 * x)))
+FreeExact = -Tval * ((np.log(2) / 2) + 0.25 * sum(y[1:(N + 1)] + y[:N]) / N)
+RelFreeErr = abs((FreeEnergy - FreeExact) / FreeExact)
+# print(FreeEnergy)
+print('Exact = ', FreeExact)
+print('RelFreeErr = ', RelFreeErr)
+# dlnz, = torch.autograd.grad(lnz, beta, create_graph=True) #  En = -d lnZ / d beta
+# dlnz2, = torch.autograd.grad(dlnz, beta)
+# message = ('K={:.3f}, ' + 'lnz={:.5f}, '+'dlnz={:.5f}, '+'dlnz2={:.5f} ')\
+#         .format(K, lnz.item(), -dlnz.item(), dlnz2.item()*beta.item()**2)
+# print(message)
+
+
 
 
 '''
@@ -230,11 +240,11 @@ with open(filename, 'w') as f:
     f.write('# beta \t FreeEnergy \t Energy \t beta^2*dlnz2 \t mag \n')
 '''
 
-
+'''
 # for K in np.linspace(0.4, 0.5, 21):
 for K in np.linspace(1/1.54, 1/1.49, 21):
     beta = torch.tensor(K, dtype=dtype, device=device).requires_grad_()
-    lnz, mag = free_energy_ctmrg(lattice, beta,chiM, CTMRG_step, thres=1e-7)
+    lnz, mag = free_energy_ctmrg(lattice, beta,chiM, CTMRG_step, thres=1e-6)
     dlnz, = torch.autograd.grad(lnz, beta, create_graph=True)  # En = -d lnZ / d beta
     dlnz2, = torch.autograd.grad(dlnz, beta)  # Cv = beta^2 * d^2 lnZ / d beta^2
     # print(K, lnz.item(), -dlnz.item(), dlnz2.item() * beta.item() ** 2)
@@ -245,3 +255,5 @@ for K in np.linspace(1/1.54, 1/1.49, 21):
     # f.write(message)
     # f.write('\n')
     # f.close()
+'''
+

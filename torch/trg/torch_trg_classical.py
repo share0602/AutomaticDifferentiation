@@ -1,4 +1,5 @@
-
+import sys
+sys.path.insert(0, '../')
 from utils import ncon
 from utils import SVD
 from utils import EigenSolver

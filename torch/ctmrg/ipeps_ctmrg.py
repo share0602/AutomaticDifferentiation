@@ -16,9 +16,9 @@ class iPEPS(torch.nn.Module):
         self.ctm_step = params[2]
         # B(phy, up, left, down, right)
         if model_name == 'Heisenberg':
-            Init = np.load("HeisenInit.npy")
+            Init = np.load("../InitialState/HeisenInit.npy")
         elif model_name == 'Ising':
-            Init = np.load("IsingInit.npy")
+            Init = np.load("../InitialState/IsingInit.npy")
         Ainit = Init[0]; Binit = Init[1]
         Ainit = torch.from_numpy(Ainit); Ainit.requires_grad_()
         Binit = torch.from_numpy(Binit); Binit.requires_grad_()

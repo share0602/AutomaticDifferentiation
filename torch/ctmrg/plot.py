@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 # filename = 'ising_trg_square.txt'
 # filename = 'ising_ctmrg_honeycomb.txt'
-filename = 'ising_ctmrg_square.txt'
+filename = 'ctmrg/ising_ctmrg_square.txt'
 data = np.loadtxt(filename)
 beta = data[:,0]
 T = 1/beta
